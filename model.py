@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torchvision.models as models
 
 class ImageMerger(nn.Module):
@@ -12,9 +11,14 @@ class ImageMerger(nn.Module):
         self.feature_extractor = nn.Sequential(*list(self.feature_extractor.children())[:-2])
         
         # Custom head for merging
-        self.fc1 = nn.Linear(32768 * 2, 1024)  # 2048 * 4 * 4
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 128 * 128 * 3)  # assuming the output is a 128x128 RGB image
+        self.fc = nn.Linear(2048 * 4 * 4 * 2, 1024 * 4 * 4)  # 2048 * 4 * 4
+        
+        # Transposed convolution layers
+        self.deconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=4, stride=2, padding=1)
+        self.deconv2 = nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1)
+        self.deconv3 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1)
+        self.deconv4 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1)
+        self.deconv5 = nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1)  # Final output with 3 channels for RGB
 
     def forward(self, img1, img2):
         x1 = self.feature_extractor(img1)
@@ -26,14 +30,20 @@ class ImageMerger(nn.Module):
         x = torch.cat((x1, x2), dim=1)
         
         # Pass through custom head
-        x = nn.ReLU()(self.fc1(x))
-        x = nn.ReLU()(self.fc2(x))
-        x = torch.sigmoid(self.fc3(x))
+        x = nn.ReLU()(self.fc(x))
+        x = x.view(-1, 1024, 4, 4)  # Reshape for transposed convolutions
         
-        return x.view(-1, 3, 128, 128)  # reshaping to the desired output shape
-    
+        # Transposed convolutions
+        x = nn.ReLU()(self.deconv1(x))
+        x = nn.ReLU()(self.deconv2(x))
+        x = nn.ReLU()(self.deconv3(x))
+        x = nn.ReLU()(self.deconv4(x))
+        x = torch.sigmoid(self.deconv5(x))
+        
+        return x
+
 # if __name__ == "__main__":
-#     mps_device = torch.device("mps")
-#     model = ImageMerger().to(mps_device)  # 'device' can be 'cuda' or 'cpu'
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     model = ImageMerger().to(device)  # Changed 'mps_device' to the more generic 'device'
 #     criterion = nn.MSELoss()
 #     optimizer = optim.Adam(model.parameters(), lr=0.001)
