@@ -7,18 +7,14 @@ class ImageMerger(nn.Module):
         super(ImageMerger, self).__init__()
         
         # Feature extraction with pretrained model (e.g., ResNet50)
-        self.feature_extractor = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+        self.feature_extractor = models.resnet34(weights=models.ResNet34_Weights.DEFAULT)
         self.feature_extractor = nn.Sequential(*list(self.feature_extractor.children())[:-2])
         
-        # Custom head for merging
-        self.fc = nn.Linear(2048 * 4 * 4 * 2, 1024 * 4 * 4)  # 2048 * 4 * 4
-        
         # Transposed convolution layers
-        self.deconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=4, stride=2, padding=1)
+        self.deconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=8, stride=4, padding=2)
         self.deconv2 = nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1)
         self.deconv3 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1)
-        self.deconv4 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1)
-        self.deconv5 = nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1)  # Final output with 3 channels for RGB
+        self.deconv4 = nn.ConvTranspose2d(128, 3, kernel_size=4, stride=2, padding=1)
 
     def forward(self, img1, img2):
         x1 = self.feature_extractor(img1)
@@ -30,15 +26,13 @@ class ImageMerger(nn.Module):
         x = torch.cat((x1, x2), dim=1)
         
         # Pass through custom head
-        x = nn.ReLU()(self.fc(x))
         x = x.view(-1, 1024, 4, 4)  # Reshape for transposed convolutions
         
         # Transposed convolutions
         x = nn.ReLU()(self.deconv1(x))
         x = nn.ReLU()(self.deconv2(x))
         x = nn.ReLU()(self.deconv3(x))
-        x = nn.ReLU()(self.deconv4(x))
-        x = torch.sigmoid(self.deconv5(x))
+        x = torch.sigmoid(self.deconv4(x))
         
         return x
 
