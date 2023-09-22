@@ -1,10 +1,11 @@
-import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-import json
+from google_emoji import getEmojiUrl, googleRequestUrl
 from PIL import Image
 import requests
 import os
+import json
+from google_emoji import EmojiCombo
 
 
 class EmojiDataset(Dataset):
