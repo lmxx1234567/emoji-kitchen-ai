@@ -2,11 +2,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import json
-from google_emoji import getEmojiUrl, googleRequestUrl
 from PIL import Image
 import requests
 import os
-from google_emoji import EmojiCombo
 
 
 class EmojiDataset(Dataset):
@@ -55,18 +53,25 @@ class EmojiDataset(Dataset):
         cached_path = self.get_cached_image_path(emoji_id, prefix)
         if os.path.exists(cached_path):
             # Load from cache
-            img = Image.open(cached_path)
-            return img.convert('RGB')
+            try:
+                img = Image.open(cached_path)
+                return img.convert('RGB')
+            except:
+                return self.get_image(url, cached_path)
         else:
-            # Fetch image, cache it, and return
-            with requests.get(url, stream=True) as response:
-                response.raise_for_status()  # Raise error for failed requests
-                with Image.open(response.raw) as img:
-                    subdir = os.path.dirname(cached_path)
-                    if not os.path.exists(subdir):
-                        os.mkdir(subdir)
-                    img.save(cached_path)
-                    return img.convert('RGB')
+            return self.get_image(url, cached_path)
+
+
+    def get_image(self, url, cached_path):
+        # Fetch image, cache it, and return
+        with requests.get(url, stream=True) as response:
+            response.raise_for_status()  # Raise error for failed requests
+            with Image.open(response.raw) as img:
+                subdir = os.path.dirname(cached_path)
+                if not os.path.exists(subdir):
+                    os.mkdir(subdir)
+                img.save(cached_path)
+                return img.convert('RGB')
 
 
 # if __name__ == "__main__":
