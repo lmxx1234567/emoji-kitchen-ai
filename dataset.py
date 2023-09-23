@@ -6,10 +6,12 @@ import requests
 import os
 import json
 from google_emoji import EmojiCombo
+from tqdm import tqdm
 
 
 class EmojiDataset(Dataset):
     def __init__(self, data_path, size=128, cache_dir="./data"):
+        self.session = requests.Session()
         self.size = size
         with open(data_path, "r") as f:
             data = json.load(f)
@@ -65,7 +67,7 @@ class EmojiDataset(Dataset):
 
     def get_image(self, url, cached_path):
         # Fetch image, cache it, and return
-        with requests.get(url, stream=True) as response:
+        with self.session.get(url, stream=True) as response:
             response.raise_for_status()  # Raise error for failed requests
             with Image.open(response.raw) as img:
                 subdir = os.path.dirname(cached_path)
@@ -75,6 +77,9 @@ class EmojiDataset(Dataset):
                 return img.convert('RGB')
 
 
-# if __name__ == "__main__":
-#     dataset = EmojiDataset('emoji-kitchen/data/emojiData.json')
-#     dataloader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=4)
+if __name__ == "__main__":
+    dataset = EmojiDataset('data/emojiData.json')
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=4)
+    for index in tqdm(dataloader):
+        pass
+
