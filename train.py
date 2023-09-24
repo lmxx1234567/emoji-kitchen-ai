@@ -15,10 +15,16 @@ def initialize_weights(layer):
             nn.init.constant_(layer.bias, 0)
 
 
-def main(checkpoint_path=None):
-    device = torch.device("mps")
+def train(checkpoint_path=None,frezze_feature_extractor=False):
+    # 'device' can be 'cuda', 'mps' or 'cpu'
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps")
 
-    model = ImageMerger().to(device)  # 'device' can be 'cuda', 'mps' or 'cpu'
+    model = ImageMerger().to(device)
+
+    # Freeze feature extractor
+    if frezze_feature_extractor:
+        model.set_feature_extractor_grad(False)
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -45,7 +51,7 @@ def main(checkpoint_path=None):
     for epoch in range(start_epoch, num_epochs):
         pbar.clear()
         running_loss = 0.0
-        for i, (left_images, right_images, target_images) in enumerate(dataloader, 1):
+        for i, (left_images, right_images, target_images) in enumerate(dataloader):
             # Move data to device
             left_images, right_images, target_images = (
                 left_images.to(device),
@@ -81,6 +87,11 @@ def main(checkpoint_path=None):
             save_dir = os.path.dirname(checkpoint_path)
         else:
             save_dir = "models"
+
+        # Create save_dir if it doesn't exist
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        
         checkpoint_save_path = os.path.join(save_dir, f"model_epoch_{epoch + 1}.pth")
         torch.save(
             {
@@ -100,6 +111,7 @@ def main(checkpoint_path=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train ImageMerger model.')
     parser.add_argument('--checkpoint', type=str, help='Path to load the checkpoint from.')
+    parser.add_argument('--freeze', action='store_true', help='Freeze feature extractor.')
     args = parser.parse_args()
 
-    main(checkpoint_path=args.checkpoint)
+    train(checkpoint_path=args.checkpoint)
