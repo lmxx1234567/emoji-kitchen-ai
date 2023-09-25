@@ -68,11 +68,11 @@ def train(checkpoint_path_gen=None,checkpoint_path_dis=None,frezze_feature_extra
             
             fake_merged_img = generator(left_img, right_img)
             
-            real_labels = torch.ones((batch_size, 1)).to(device)
-            fake_labels = torch.zeros((batch_size, 1)).to(device)
-            
             logits_real = discriminator(left_img, right_img, real_merged_img)
             logits_fake = discriminator(left_img, right_img, fake_merged_img.detach())
+
+            real_labels = torch.ones((logits_real.size(0), 1)).to(device)
+            fake_labels = torch.zeros((logits_fake.size(0), 1)).to(device)
             
             loss_real = criterion(logits_real, real_labels)
             loss_fake = criterion(logits_fake, fake_labels)
@@ -98,7 +98,7 @@ def train(checkpoint_path_gen=None,checkpoint_path_dis=None,frezze_feature_extra
                 running_loss_dis = 0.0
                 running_loss_gen = 0.0
             else:
-                pbar.set_postfix(loss_gem=running_loss_gen / (i%print_every),loss_dis=running_loss_dis / (i%print_every))
+                pbar.set_postfix(loss_gen=running_loss_gen / (i%print_every),loss_dis=running_loss_dis / (i%print_every))
             pbar.update(1)
             pbar.set_description(f"Epoch [{epoch + 1}/{num_epochs}]")
 
