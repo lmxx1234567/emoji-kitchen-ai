@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from dataset import EmojiWithFakeDataset
+from dataset import EmojiDataset
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -31,7 +31,7 @@ def train(checkpoint_path=None,frezze_feature_extractor=False):
     # load generator
     model,optimizer,start_epoch = load_generator(checkpoint_path=checkpoint_path,model=model,optimizer=optimizer)
 
-    dataset = EmojiWithFakeDataset("data/emojiData.json")
+    dataset = EmojiDataset("data/emojiData.json")
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=4)
 
     # Define hyperparameters
