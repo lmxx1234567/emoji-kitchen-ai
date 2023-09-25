@@ -7,6 +7,8 @@ import os
 import json
 from google_emoji import EmojiCombo
 from tqdm import tqdm
+import torch
+import random
 
 
 class EmojiDataset(Dataset):
