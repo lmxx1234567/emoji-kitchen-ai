@@ -14,8 +14,7 @@ class Discriminator(nn.Module):
         # Assume the output feature map size is 512x4x4 for each image from ResNet
         self.final_layers = nn.Sequential(
             nn.Linear(512 * 4 * 4 * 3, 64),  # Concatenating three feature maps along channel dimension
-            # dropout layer
-            nn.Dropout(0.4),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(64, 1),
             nn.Sigmoid()
         )
