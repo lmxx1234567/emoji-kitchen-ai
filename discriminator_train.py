@@ -3,7 +3,7 @@ from dataset import EmojiWithFakeDataset
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from discriminator_model import Discriminator
+from models import Discriminator
 from tqdm import tqdm
 import os
 import argparse

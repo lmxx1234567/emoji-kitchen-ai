@@ -3,8 +3,7 @@ from dataset import EmojiDataset
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from generator_model import ImageMerger
-from discriminator_model import Discriminator
+from models import ImageMerger,Discriminator
 from tqdm import tqdm
 import argparse
 from generator_train import load_generator,save_generator
@@ -28,12 +27,11 @@ def train(checkpoint_path_gen=None,checkpoint_path_dis=None,frezze_feature_extra
 
     # Freeze feature extractor
     if frezze_feature_extractor:
-        generator.set_feature_extractor_grad(frezze_feature_extractor)
-        discriminator.set_feature_extractor_grad(frezze_feature_extractor)
+        generator.feature_extractor.set_grad_requires(False)
 
     criterion = nn.BCELoss()
     optimizer_gen = optim.Adam(generator.parameters(), lr=1e-4, betas=(0.5, 0.999))
-    optimizer_dis = optim.Adam(discriminator.parameters(), lr=1e-5, betas=(0.5, 0.999))
+    optimizer_dis = optim.Adam(discriminator.parameters(), lr=1e-4, betas=(0.5, 0.999))
 
     # load generator
     generator,optimizer_gen,start_epoch_gen = load_generator(checkpoint_path=checkpoint_path_gen,model=generator,optimizer=optimizer_gen)
@@ -96,6 +94,8 @@ def train(checkpoint_path_gen=None,checkpoint_path_dis=None,frezze_feature_extra
             loss_fake = criterion(logits_fake, fake_labels)
             
             loss_dis = (loss_real + loss_fake) / 2
+            loss_dis.backward()
+            optimizer_dis.step()
 
             # Append current loss and accuracy values to deques
             loss_gen_window.append(loss_gen.item())
@@ -105,12 +105,7 @@ def train(checkpoint_path_gen=None,checkpoint_path_dis=None,frezze_feature_extra
             # Compute averages over the sliding window
             avg_loss_gen = sum(loss_gen_window) / len(loss_gen_window)
             avg_loss_dis = sum(loss_dis_window) / len(loss_dis_window)
-            avg_acc = sum(acc_window) / (len(acc_window) * batch_size)
-
-            # Conditionally update discriminator
-            if avg_acc > 0.6:
-                loss_dis.backward()
-                optimizer_dis.step()
+            avg_acc = sum(acc_window) / (len(acc_window) * batch_size)          
             
             # Update the progress bar
             pbar.set_postfix(loss_gen=avg_loss_gen, loss_dis=avg_loss_dis, acc=avg_acc)

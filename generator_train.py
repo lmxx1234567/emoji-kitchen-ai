@@ -3,7 +3,7 @@ from dataset import EmojiDataset
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from generator_model import ImageMerger
+from models import ImageMerger
 from tqdm import tqdm
 import os
 import argparse
